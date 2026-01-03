@@ -1,153 +1,128 @@
-'use client';
+"use client";
+import { useState, useEffect } from 'react';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import authService from '@/services/auth';
-
-export default function DashboardGaleri() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [galeri, setGaleri] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+export default function KelolaGaleri() {
+  const [dataGaleri, setDataGaleri] = useState([]);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    type: 'photo',
-    category: 'kegiatan',
+    judul: '',
+    imageUrl: '',
+    deskripsi: ''
   });
+  const [loading, setLoading] = useState(false);
 
+  // Ambil data saat halaman dibuka
   useEffect(() => {
-    const currentUser = authService.getUser();
-    if (!currentUser) {
-      router.push('/login');
-      return;
-    }
-    setUser(currentUser);
     fetchGaleri();
-  }, [router]);
+  }, []);
 
   const fetchGaleri = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/galeri?limit=50`, {
-        headers: { Authorization: `Bearer ${authService.getToken()}` },
-      });
-      const data = await response.json();
-      if (data.success) setGaleri(data.data);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
+      const res = await fetch('http://localhost:5000/api/galeri');
+      const data = await res.json();
+      setDataGaleri(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Gagal ambil foto:", err);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const form = new FormData();
-    form.append('title', formData.title);
-    form.append('description', formData.description);
-    form.append('type', formData.type);
-    form.append('category', formData.category);
-    
-    const fileInput = document.getElementById('image');
-    if (fileInput.files[0]) {
-      form.append('image', fileInput.files[0]);
-    }
-
+    setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/galeri`, {
+      const res = await fetch('http://localhost:5000/api/galeri', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${authService.getToken()}` },
-        body: form,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-      const data = await response.json();
-      if (data.success) {
-        setShowForm(false);
-        setFormData({ title: '', description: '', type: 'photo', category: 'kegiatan' });
+
+      if (res.ok) {
+        alert('✅ Foto Berhasil Disimpan!');
+        setFormData({ judul: '', imageUrl: '', deskripsi: '' });
         fetchGaleri();
+      } else {
+        alert('❌ Gagal menyimpan foto');
       }
     } catch (error) {
-      console.error('Error:', error);
+      alert('⚠️ Error koneksi');
     }
+    setLoading(false);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Yakin?')) return;
+    if(!confirm('Hapus foto ini dari galeri?')) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/galeri/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${authService.getToken()}` },
-      });
-      const data = await response.json();
-      if (data.success) fetchGaleri();
+      await fetch(`http://localhost:5000/api/galeri/${id}`, { method: 'DELETE' });
+      fetchGaleri();
     } catch (error) {
-      console.error('Error:', error);
+      alert('Gagal menghapus');
     }
   };
 
-  if (!user) return null;
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-pramuka-primary text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Kelola Galeri</h1>
-            <Link href="/dashboard" className="text-gray-300 hover:text-white">← Kembali</Link>
+    <div>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">📷 Kelola Galeri Dokumentasi</h2>
+      
+      {/* FORM INPUT */}
+      <div className="bg-white p-6 rounded-xl shadow-md mb-8 border-l-4 border-blue-500">
+        <h3 className="font-bold text-lg mb-4 text-gray-700">Tambah Foto Baru</h3>
+        <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-bold text-gray-600">Judul Foto</label>
+              <input type="text" required placeholder="Kegiatan..." 
+                className="w-full border p-2 rounded mt-1"
+                value={formData.judul} onChange={(e) => setFormData({...formData, judul: e.target.value})} />
+            </div>
+            
+            <div>
+              <label className="text-sm font-bold text-gray-600">Link URL Gambar</label>
+              <input type="text" required placeholder="https://..." 
+                className="w-full border p-2 rounded mt-1"
+                value={formData.imageUrl} onChange={(e) => setFormData({...formData, imageUrl: e.target.value})} />
+              <p className="text-xs text-gray-400 mt-1">Copy link gambar (Klik kanan gambar di internet -&gt; Copy Image Link)</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-gray-600">Keterangan (Opsional)</label>
+              <textarea placeholder="Deskripsi singkat..." className="w-full border p-2 rounded mt-1" rows="2"
+                value={formData.deskripsi} onChange={(e) => setFormData({...formData, deskripsi: e.target.value})}></textarea>
+            </div>
+
+            <button type="submit" disabled={loading} className="bg-blue-600 text-white py-2 px-6 rounded font-bold hover:bg-blue-700 w-full">
+              {loading ? 'Menyimpan...' : '+ SIMPAN FOTO'}
+            </button>
           </div>
-        </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary mb-6">
-          {showForm ? 'Batal' : '+ Tambah Foto/Video'}
-        </button>
-        {showForm && (
-          <div className="card p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">Tambah Item Galeri</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input type="text" placeholder="Judul" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-4 py-2 border rounded-lg" required />
-              <textarea placeholder="Deskripsi" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
-              <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} className="w-full px-4 py-2 border rounded-lg">
-                <option value="photo">Foto</option>
-                <option value="video">Video</option>
-              </select>
-              <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2 border rounded-lg">
-                <option value="kegiatan">Kegiatan</option>
-                <option value="latihan">Latihan</option>
-                <option value="acara">Acara</option>
-                <option value="lomba">Lomba</option>
-              </select>
-              <input type="file" id="image" accept="image/*" className="w-full" />
-              <button type="submit" className="btn-primary">Simpan</button>
-            </form>
+
+          {/* Preview Gambar */}
+          <div className="flex items-center justify-center bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 h-64 overflow-hidden">
+            {formData.imageUrl ? (
+              <img src={formData.imageUrl} alt="Preview" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-gray-400">Preview Gambar</span>
+            )}
           </div>
-        )}
-        {loading ? (
-          <div className="text-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-4 border-pramuka-primary border-t-transparent mx-auto"></div></div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {galeri.length === 0 ? <div className="col-span-full text-center py-12 text-gray-500">Belum ada foto/video</div> : 
-              galeri.map((item) => (
-                <div key={item._id} className="card overflow-hidden">
-                  <div className="aspect-square relative">
-                    {item.type === 'video' ? (
-                      <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white">Video</div>
-                    ) : (
-                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-                    )}
-                  </div>
-                  <div className="p-3 flex justify-between items-center">
-                    <span className="text-sm font-medium truncate">{item.title}</span>
-                    <button onClick={() => handleDelete(item._id)} className="text-red-600 text-sm">Hapus</button>
-                  </div>
-                </div>
-              ))
-            }
+
+        </form>
+      </div>
+
+      {/* GRID FOTO */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {dataGaleri.map((item) => (
+          <div key={item._id} className="bg-white rounded shadow overflow-hidden group relative">
+            <div className="h-40 overflow-hidden">
+                <img src={item.imageUrl} alt={item.judul} className="h-full w-full object-cover" />
+            </div>
+            <div className="p-3">
+              <h4 className="font-bold text-sm truncate">{item.judul}</h4>
+              <button onClick={() => handleDelete(item._id)} 
+                className="mt-2 text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 w-full font-bold">
+                HAPUS
+              </button>
+            </div>
           </div>
-        )}
-      </main>
+        ))}
+      </div>
     </div>
   );
 }
-

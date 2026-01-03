@@ -1,42 +1,15 @@
-/**
- * Database Configuration
- * Menghubungkan aplikasi ke MongoDB menggunakan Mongoose
- */
-
+// backend/src/config/db.js
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    // Koneksi ke MongoDB
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      // Opsi tambahan untuk stabilitas koneksi
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    });
-
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    const conn = await mongoose.connect(process.env.MONGO_URI);
     
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      console.error('❌ MongoDB connection error:', err);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️ MongoDB disconnected. Attempting to reconnect...');
-    });
-
-    mongoose.connection.on('reconnected', () => {
-      console.log('✅ MongoDB reconnected');
-    });
-
-    return conn;
+    console.log(`MongoDB Terkoneksi: ${conn.connection.host}`);
   } catch (error) {
-    console.error('❌ Error connecting to MongoDB:', error.message);
-    // Exit process jika koneksi gagal
-    process.exit(1);
+    console.error(`Error: ${error.message}`);
+    process.exit(1); // Matikan proses jika gagal konek
   }
 };
 
 module.exports = connectDB;
-
