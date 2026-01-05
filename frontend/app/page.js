@@ -263,7 +263,7 @@ export default function Home() {
                         <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-6 inline-block backdrop-blur-sm">PENDAFTARAN ANGGOTA BARU</span>
                         <h3 className="text-3xl md:text-4xl font-black mb-6 leading-tight">SIAP MENJADI BAGIAN DARI KAMI?</h3>
                         <p className="mb-10 text-red-100 text-lg">
-                            Bergabunglah dengan Ambalan Gajah Mada. Tempa dirimu menjadi pribadi yang tangguh, disiplin, dan berkarakter.
+                            Bergabunglah dengan Ambalan  Arjuna - Srikandi. Tempa dirimu menjadi pribadi yang tangguh, disiplin, dan berkarakter.
                         </p>
                         
                         <button className="w-full md:w-auto bg-yellow-400 text-black font-black py-4 px-10 rounded-xl shadow-lg hover:bg-white hover:text-red-600 transition transform hover:-translate-y-1">

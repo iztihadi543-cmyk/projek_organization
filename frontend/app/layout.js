@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         
         {/* Footer Sederhana */}
         <footer className="bg-gray-800 text-white text-center p-4 mt-10">
-          <p>&copy; 2024 Pramuka Indonesia. Salam Pramuka!</p>
+          <p>&copy; 2025 Pramuka Indonesia. Salam Pramuka!</p>
         </footer>
       </body>
     </html>

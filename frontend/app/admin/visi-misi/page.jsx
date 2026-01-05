@@ -2,172 +2,121 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function AdminVisiMisiPage() {
+export default function KelolaVisiMisi() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('visimisi');
+  const [dataId, setDataId] = useState(null);
+  const [visi, setVisi] = useState('');
+  const [misiText, setMisiText] = useState('');
 
-  const [formData, setFormData] = useState({
-    visi: '',
-    misi: [],
-    programKerja: { pendek: [], menengah: [], panjang: [] }
-  });
-
-  // FETCH DATA
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token');
-      try {
-        const res = await fetch('http://localhost:5000/api/visimisi', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setFormData({
-            visi: data.visi || '',
-            misi: data.misi || [],
-            programKerja: {
-              pendek: data.programKerja?.pendek || [],
-              menengah: data.programKerja?.menengah || [],
-              panjang: data.programKerja?.panjang || []
-            }
-          });
-        }
-      } catch (error) { console.error(error); } finally { setLoading(false); }
-    };
-    fetchData();
-  }, []);
-
-  // HANDLERS
-  const handleVisiChange = (e) => setFormData({ ...formData, visi: e.target.value });
-  const handleMisiChange = (idx, field, val) => {
-    const newMisi = [...formData.misi]; newMisi[idx][field] = val; setFormData({ ...formData, misi: newMisi });
-  };
-  const addMisi = () => setFormData({ ...formData, misi: [...formData.misi, { title: '', description: '', icon: '⚜️' }] });
-  const removeMisi = (idx) => setFormData({ ...formData, misi: formData.misi.filter((_, i) => i !== idx) });
-
-  const handleProkerChange = (period, idx, field, val) => {
-    const newList = [...formData.programKerja[period]]; newList[idx][field] = val;
-    setFormData({ ...formData, programKerja: { ...formData.programKerja, [period]: newList } });
-  };
-  const addProker = (period) => {
-    setFormData({ ...formData, programKerja: { ...formData.programKerja, [period]: [...formData.programKerja[period], { nama: '', tanggal: '', sasaran: '', status: 'Belum Terlaksana' }] } });
-  };
-  const removeProker = (period, idx) => {
-    const newList = formData.programKerja[period].filter((_, i) => i !== idx);
-    setFormData({ ...formData, programKerja: { ...formData.programKerja, [period]: newList } });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setSaving(true);
-    const token = localStorage.getItem('token');
+  // --- FETCH ---
+  const fetchData = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/visimisi', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(formData)
-      });
-      if (res.ok) alert('✅ Data Berhasil Disimpan!');
-    } catch (error) { alert('Gagal menyimpan.'); } finally { setSaving(false); }
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/visimisi`);
+      const data = await res.json();
+      const currentData = Array.isArray(data) ? data[0] : data;
+      if (currentData) {
+        setDataId(currentData._id);
+        setVisi(currentData.visi || '');
+        if (currentData.misi && Array.isArray(currentData.misi)) {
+          setMisiText(currentData.misi.map(m => m.title || m).join('\n'));
+        }
+      }
+      setLoading(false);
+    } catch (err) { console.error(err); setLoading(false); }
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  // --- SUBMIT ---
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return router.push('/login');
+
+    const misiArray = misiText.split('\n').filter(line => line.trim() !== '').map(line => ({ title: line, description: '', icon: '⚜️' }));
+    const payload = { visi, misi: misiArray };
+    let url = dataId ? `${process.env.NEXT_PUBLIC_API_URL}/api/visimisi/${dataId}` : `${process.env.NEXT_PUBLIC_API_URL}/api/visimisi`;
+    let method = dataId ? 'PUT' : 'POST'; // Backend mungkin perlu penyesuaian jika create baru selalu POST
+
+    // Fallback: Jika endpoint create/update sama (misal POST handle both), gunakan POST
+    // Tapi biasanya Update pakai PUT + ID. Kita pakai logika standar REST API.
+    
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) { alert("Visi & Misi diperbarui!"); fetchData(); }
+    } catch (e) { console.error(e); }
   };
 
   if (loading) return <div className="p-10 text-center text-gray-500">Memuat data...</div>;
 
-  const TabButton = ({ id, label, color }) => (
-    <button type="button" onClick={() => setActiveTab(id)}
-      className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-all border-b-4 
-        ${activeTab === id ? `border-${color}-600 text-${color}-700 bg-${color}-50` : 'border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}>
-      {label}
-    </button>
-  );
-
   return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Area Admin Pramuka</h1>
-          <p className="text-sm text-gray-500">Edit Visi, Misi, dan Program Kerja</p>
-        </div>
-        <button onClick={handleSubmit} disabled={saving} className={`px-6 py-2 rounded-lg font-bold text-white shadow-lg transition ${saving ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'}`}>
-          {saving ? 'Menyimpan...' : 'SIMPAN PERUBAHAN 💾'}
-        </button>
+    <div className="max-w-4xl mx-auto">
+      
+      {/* HEADER */}
+      <div className="text-center mb-10">
+         <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Visi & Misi Ambalan</h1>
+         <p className="text-gray-500 mt-2">Pondasi utama organisasi. Pastikan isinya sesuai dengan AD/ART.</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="flex border-b border-gray-100 bg-gray-50">
-          <TabButton id="visimisi" label="1. Visi & Misi" color="red" />
-          <TabButton id="pendek" label="2. Jangka Pendek" color="blue" />
-          <TabButton id="menengah" label="3. Jangka Menengah" color="yellow" />
-          <TabButton id="panjang" label="4. Jangka Panjang" color="gray" />
-        </div>
+      <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden relative">
+        {/* Dekorasi Atas */}
+        <div className="h-4 bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400"></div>
 
-        <div className="p-8">
-          <form onSubmit={handleSubmit}>
-            {activeTab === 'visimisi' && (
-              <div className="space-y-8 animate-fade-in">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Visi Ambalan</label>
-                  <textarea value={formData.visi} onChange={handleVisiChange} rows="3" className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="Masukkan Visi..."></textarea>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <label className="block text-sm font-bold text-gray-700 uppercase">Daftar Misi</label>
-                    <button type="button" onClick={addMisi} className="text-red-600 hover:text-red-800 text-sm font-bold bg-red-50 px-3 py-1 rounded">+ Tambah Misi</button>
-                  </div>
-                  {formData.misi.map((item, i) => (
-                    <div key={i} className="flex gap-4 mb-4 items-start bg-gray-50 p-3 rounded-lg border border-gray-100">
-                      <div className="w-16"><input type="text" value={item.icon} onChange={(e)=>handleMisiChange(i,'icon',e.target.value)} className="w-full p-2 border rounded text-center text-xl" placeholder="Emoji" /></div>
-                      <div className="flex-1 space-y-2">
-                        <input type="text" value={item.title} onChange={(e)=>handleMisiChange(i,'title',e.target.value)} className="w-full p-2 border rounded font-bold" placeholder="Judul Misi" />
-                        <textarea value={item.description} onChange={(e)=>handleMisiChange(i,'description',e.target.value)} rows="1" className="w-full p-2 border rounded text-sm" placeholder="Deskripsi..."></textarea>
-                      </div>
-                      <button type="button" onClick={()=>removeMisi(i)} className="text-gray-400 hover:text-red-500 pt-2">🗑️</button>
-                    </div>
-                  ))}
-                </div>
+        <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-10">
+           
+           {/* SECTION VISI */}
+           <div className="relative">
+              <div className="absolute -left-12 top-0 text-gray-50 text-9xl font-black pointer-events-none select-none opacity-50">01</div>
+              <label className="block text-lg font-black text-gray-800 mb-4 uppercase tracking-wider flex items-center gap-2">
+                 🎯 Visi Ambalan
+              </label>
+              <div className="relative">
+                <textarea 
+                    value={visi}
+                    onChange={(e) => setVisi(e.target.value)}
+                    rows="3"
+                    className="w-full p-6 text-xl md:text-2xl font-serif text-center italic text-gray-700 bg-gray-50 rounded-3xl border-2 border-transparent focus:border-red-200 focus:bg-white focus:ring-4 focus:ring-red-50 outline-none transition shadow-inner"
+                    placeholder="Contoh: Terwujudnya Pramuka yang berkarakter..."
+                ></textarea>
+                <div className="text-center mt-2 text-xs text-gray-400 font-medium">Tulis visi secara singkat, padat, dan jelas.</div>
               </div>
-            )}
+           </div>
 
-            {['pendek', 'menengah', 'panjang'].map((period) => (
-              activeTab === period && (
-                <div key={period} className="animate-fade-in space-y-6">
-                  <div className="flex justify-between items-center bg-gray-100 p-3 rounded-lg">
-                    <h3 className="font-bold text-gray-800 uppercase text-sm">Kegiatan {period}</h3>
-                    <button type="button" onClick={()=>addProker(period)} className="bg-gray-800 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-black">+ Tambah Kegiatan</button>
-                  </div>
-                  {formData.programKerja[period].map((item, i) => (
-                    <div key={i} className="p-4 rounded-lg border border-gray-200 bg-white relative group hover:shadow-md transition">
-                       <button type="button" onClick={()=>removeProker(period, i)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500">✖</button>
-                       <div className="grid md:grid-cols-4 gap-4">
-                          <div className="md:col-span-2">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase">Nama Kegiatan</label>
-                            <input type="text" value={item.nama} onChange={(e)=>handleProkerChange(period,i,'nama',e.target.value)} className="w-full p-2 border rounded bg-gray-50 font-semibold text-gray-800" />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase">Tanggal</label>
-                            <input type="text" value={item.tanggal} onChange={(e)=>handleProkerChange(period,i,'tanggal',e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-sm" />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase">Status</label>
-                            <select value={item.status} onChange={(e)=>handleProkerChange(period,i,'status',e.target.value)} className={`w-full p-2 rounded border text-sm font-bold ${item.status === 'Terlaksana' ? 'text-green-600 bg-green-50 border-green-200' : 'text-yellow-600 bg-yellow-50 border-yellow-200'}`}>
-                              <option value="Belum Terlaksana">⏳ Belum</option>
-                              <option value="Terlaksana">✅ Selesai</option>
-                              <option value="Tidak Terlaksana">❌ Batal</option>
-                            </select>
-                          </div>
-                          <div className="md:col-span-4">
-                             <label className="text-[10px] font-bold text-gray-400 uppercase">Sasaran</label>
-                             <input type="text" value={item.sasaran} onChange={(e)=>handleProkerChange(period,i,'sasaran',e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-sm" />
-                          </div>
-                       </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            ))}
-          </form>
-        </div>
+           <hr className="border-gray-100" />
+
+           {/* SECTION MISI */}
+           <div className="relative">
+              <div className="absolute -left-12 top-0 text-gray-50 text-9xl font-black pointer-events-none select-none opacity-50">02</div>
+              <label className="block text-lg font-black text-gray-800 mb-4 uppercase tracking-wider flex items-center gap-2">
+                 🚀 Misi Ambalan
+              </label>
+              <div className="bg-yellow-50/50 p-6 rounded-3xl border border-yellow-100">
+                 <p className="text-sm text-yellow-800 mb-3 font-medium flex items-center gap-2">
+                    💡 <b>Tips:</b> Tekan <u>Enter</u> untuk memisahkan setiap poin misi.
+                 </p>
+                 <textarea 
+                    value={misiText}
+                    onChange={(e) => setMisiText(e.target.value)}
+                    rows="8"
+                    className="w-full p-5 bg-white rounded-2xl border border-gray-200 focus:border-orange-300 focus:ring-4 focus:ring-orange-50 outline-none transition font-medium text-gray-700 leading-loose"
+                    placeholder="1. Meningkatkan iman dan taqwa&#10;2. Mengembangkan bakat anggota..."
+                 ></textarea>
+              </div>
+           </div>
+
+           {/* ACTION BUTTON */}
+           <div className="pt-4">
+              <button type="submit" className="w-full bg-gray-900 text-white font-black text-lg py-5 rounded-2xl shadow-2xl hover:bg-red-600 hover:shadow-red-200 hover:-translate-y-1 transition duration-300 flex items-center justify-center gap-3">
+                 <span>💾</span> SIMPAN PERUBAHAN
+              </button>
+           </div>
+
+        </form>
       </div>
     </div>
   );

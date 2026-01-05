@@ -88,7 +88,7 @@ export default function StrukturPage() {
             STRUKTUR ORGANISASI
           </h1>
           <p className="text-red-100 text-lg md:text-xl font-medium max-w-2xl mx-auto opacity-90">
-            Ambalan Gajah Mada & Tribhuwana Tunggadewi
+            AMBALAN ARJUNA - SRIKANDI
           </p>
         </div>
       </div>
