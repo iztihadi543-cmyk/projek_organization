@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // 1. Import component Image
+import Image from 'next/image';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
@@ -41,7 +41,9 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      // --- PERUBAHAN DI SINI (Gunakan Backtick ` ) ---
+      // Menggunakan variabel environment agar dinamis (Localhost vs Online)
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,10 +93,10 @@ export default function LoginPage() {
             
             {/* Header Card */}
             <div className="text-center mb-8">
-               {/* 2. GANTI EMOJI DENGAN GAMBAR LOGO */}
+               {/* Logo */}
                <div className="w-24 h-24 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm p-4">
                  <Image
-                   src="/logoarjunasrikandi.png" // Pastikan file ini ada di folder public
+                   src="/logoarjunasrikandi.png" 
                    alt="Logo Arjuna Srikandi"
                    width={80}
                    height={80}

@@ -20,7 +20,10 @@ export default function VisiMisiPublicPage() {
     // Fetch Data
     const fetchData = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/visimisi');
+        // --- PERUBAHAN DI SINI (Gunakan Backtick ` ) ---
+        // Menggunakan variabel environment agar dinamis (Localhost vs Online)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/visimisi`);
+        
         const result = await res.json();
         if (res.ok) {
           setData(result);
@@ -71,7 +74,7 @@ export default function VisiMisiPublicPage() {
     <main className="min-h-screen bg-gray-50 text-gray-900 pb-24 overflow-x-hidden font-sans">
       
       {/* =========================================
-          HERO HEADER (Modern Curved Red - Sama dengan Struktur)
+          HERO HEADER (Modern Curved Red)
       ========================================= */}
       <div className="relative bg-gradient-to-b from-red-700 to-red-600 pt-24 pb-48 rounded-b-[60px] md:rounded-b-[100px] shadow-2xl z-0">
         <div className="absolute top-0 right-0 opacity-10 text-9xl transform translate-x-10 -translate-y-10 rotate-12 pointer-events-none">⚜️</div>

@@ -21,7 +21,10 @@ export default function AgendaPage() {
     // Fetch Data
     const fetchData = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/agenda');
+        // --- PERUBAHAN DI SINI (Gunakan Backtick ` ) ---
+        // Mengambil URL dari .env.local agar dinamis
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agenda`);
+        
         const result = await res.json();
         if (res.ok) {
           // Opsional: Urutkan agenda dari yang paling baru/dekat
